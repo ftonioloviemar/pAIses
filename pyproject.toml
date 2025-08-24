@@ -1,0 +1,12 @@
+[project]
+name = "paises"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.1.2",
+    "flask-sqlalchemy>=3.1.1",
+    "thefuzz>=0.22.1",
+    "unidecode>=1.4.0",
+]

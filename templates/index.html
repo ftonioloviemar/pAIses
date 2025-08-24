@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pAIses - Adivinhe o País</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>pAIses</h1>
+            <p>O desafio é adivinhar o país com a menor quantidade de tentativas e tempo.</p>
+        </header>
+
+        <div id="game-area">
+            <p class="initial-letter-container">
+                A primeira letra do país é: <span id="initial-letter">?</span>
+            </p>
+            
+            <form id="guess-form">
+                <input type="text" id="guess-input" placeholder="Digite o nome de um país" autocomplete="off" required>
+                <button type="submit">Adivinhar</button>
+            </form>
+
+            <div id="feedback-area">
+                <!-- Mensagens de acerto/erro aparecerão aqui -->
+            </div>
+
+            <div id="wrong-guesses-area">
+                <h3>Tentativas: <span id="total-attempts">0</span> | Erradas: <span id="error-count">0</span>/10</h3>
+                <ul id="wrong-guesses-list">
+                    <!-- Lista de tentativas erradas -->
+                </ul>
+            </div>
+        </div>
+
+        <div id="win-screen" class="hidden">
+            <h2 id="win-message"></h2>
+            <img id="country-flag" src="" alt="Bandeira do País">
+            <div class="stats">
+                <p>Tempo: <strong id="final-time">0</strong>s</p>
+                <p>Tentativas: <strong id="final-attempts">0</strong></p>
+            </div>
+            <form id="ranking-form">
+                <input type="text" id="player-name" placeholder="Digite seu nome para o ranking" required>
+                <button type="submit">Salvar no Ranking</button>
+            </form>
+            <button id="play-again-btn">Jogar Novamente</button>
+            <a href="/ranking" class="view-ranking-btn">Ver Ranking</a>
+        </div>
+
+        <div id="lose-screen" class="hidden">
+            <h2 id="lose-message"></h2>
+            <img id="country-flag-lose" src="" alt="Bandeira do País">
+            <p>O país correto era: <strong id="correct-country"></strong></p>
+            <p>Total de tentativas: <strong id="lose-attempts"></strong></p>
+            <button id="play-again-btn-lose">Jogar Novamente</button>
+            <a href="/ranking" class="view-ranking-btn">Ver Ranking</a>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameArea = document.getElementById('game-area');
+            const winScreen = document.getElementById('win-screen');
+            const loseScreen = document.getElementById('lose-screen');
+            const guessForm = document.getElementById('guess-form');
+            const guessInput = document.getElementById('guess-input');
+            const initialLetterEl = document.getElementById('initial-letter');
+            const feedbackArea = document.getElementById('feedback-area');
+            const errorCountEl = document.getElementById('error-count');
+            const totalAttemptsEl = document.getElementById('total-attempts');
+            const wrongGuessesList = document.getElementById('wrong-guesses-list');
+            const rankingForm = document.getElementById('ranking-form');
+            const playAgainBtn = document.getElementById('play-again-btn');
+            const playAgainBtnLose = document.getElementById('play-again-btn-lose');
+
+            let finalTime = 0;
+            let finalAttempts = 0;
+
+            function startGame() {
+                gameArea.classList.remove('hidden');
+                winScreen.classList.add('hidden');
+                loseScreen.classList.add('hidden');
+                feedbackArea.textContent = '';
+                wrongGuessesList.innerHTML = '';
+                errorCountEl.textContent = '0';
+                totalAttemptsEl.textContent = '0';
+                guessInput.value = '';
+                guessInput.focus();
+
+                fetch('/start_game', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        initialLetterEl.textContent = data.initial_letter;
+                    });
+            }
+
+            guessForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const guess = guessInput.value.trim();
+                if (!guess) return;
+
+                fetch('/guess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ guess: guess })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    feedbackArea.textContent = data.message || '';
+                    if (data.status === 'win') {
+                        showWinScreen(data);
+                    } else if (data.status === 'lose') {
+                        showLoseScreen(data);
+                    } else if (data.status === 'wrong') {
+                        updateWrongGuesses(data.wrong_guesses, data.attempts);
+                    }
+                    guessInput.value = '';
+                });
+            });
+
+            function updateWrongGuesses(guesses, attempts) {
+                totalAttemptsEl.textContent = attempts;
+                errorCountEl.textContent = guesses.length;
+                wrongGuessesList.innerHTML = '';
+                guesses.forEach(g => {
+                    const li = document.createElement('li');
+                    li.textContent = g;
+                    wrongGuessesList.appendChild(li);
+                });
+            }
+
+            function showWinScreen(data) {
+                gameArea.classList.add('hidden');
+                winScreen.classList.remove('hidden');
+                
+                document.getElementById('win-message').textContent = `Você acertou! O país era ${data.country_name}.`;
+                document.getElementById('country-flag').src = `/static/flags/${data.flag_code}.svg`;
+                document.getElementById('final-time').textContent = data.time_spent;
+                document.getElementById('final-attempts').textContent = data.attempts;
+                totalAttemptsEl.textContent = data.attempts;
+
+                finalTime = data.time_spent;
+                finalAttempts = data.attempts;
+            }
+
+            function showLoseScreen(data) {
+                gameArea.classList.add('hidden');
+                loseScreen.classList.remove('hidden');
+                document.getElementById('lose-message').textContent = "Você não conseguiu adivinhar a tempo!";
+                document.getElementById('correct-country').textContent = data.country_name;
+                document.getElementById('country-flag-lose').src = `/static/flags/${data.flag_code}.svg`;
+                document.getElementById('lose-attempts').textContent = data.attempts;
+            }
+
+            rankingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const playerName = document.getElementById('player-name').value.trim();
+                if (!playerName) return;
+
+                fetch('/save_ranking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ player_name: playerName })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        window.location.href = '/ranking';
+                    } else {
+                        alert("Erro ao salvar no ranking: " + data.error)
+                    }
+                });
+            });
+
+            playAgainBtn.addEventListener('click', startGame);
+            playAgainBtnLose.addEventListener('click', startGame);
+
+            // Start the first game on page load
+            startGame();
+        });
+    </script>
+</body>
+</html>

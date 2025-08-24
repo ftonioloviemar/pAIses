@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking - pAIses</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ranking Global</h1>
+            <p>Top 20 melhores jogadores.</p>
+        </header>
+
+        <div id="ranking-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Nome</th>
+                        <th>País Adivinhado</th>
+                        <th>Tempo (s)</th>
+                        <th>Tentativas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in rankings %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ entry.player_name }}</td>
+                        <td>{{ entry.country_name }}</td>
+                        <td>{{ "%.2f"|format(entry.time_spent) }}</td>
+                        <td>{{ entry.attempts }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">Ninguém no ranking ainda. Seja o primeiro!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="play-again-container">
+            <a href="/" class="play-again-btn">Jogar Novamente</a>
+        </div>
+    </div>
+</body>
+</html>
