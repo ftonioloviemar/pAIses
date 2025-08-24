@@ -6,8 +6,8 @@
 #
 # IMPORTANT: Run this script with sudo or as root.
 #
-# Usage: UV_BIN=$(which uv) curl -sL <URL_TO_THIS_SCRIPT> | bash
-# Or: UV_BIN=$(which uv) bash deploy_paises.sh
+# Usage: curl -sL <URL_TO_THIS_SCRIPT> | bash
+# Or: sudo bash deploy_paises.sh
 
 PROJECT_DIR="/opt/paises"
 REPO_URL="https://github.com/ftonioloviemar/pAIses.git"
