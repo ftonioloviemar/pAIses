@@ -19,7 +19,7 @@ mkdir -p "$PROJECT_DIR" || { echo "Failed to create project directory."; exit 1;
 
 if [ -d "$PROJECT_DIR/.git" ]; then
     echo "Repository already cloned. Pulling latest changes..."
-    git -C "$PROJECT_DIR" pull || { echo "Failed to pull latest changes."; exit 1; }
+    (cd "$PROJECT_DIR" && git pull) || { echo "Failed to pull latest changes."; exit 1; }
 else
     echo "Cloning repository into $PROJECT_DIR..."
     git clone "$REPO_URL" "$PROJECT_DIR" || { echo "Failed to clone repository."; exit 1; }
