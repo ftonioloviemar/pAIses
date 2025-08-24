@@ -1,7 +1,5 @@
 #!/bin/bash
 
-UV_BIN=$(which uv) || { echo "Error: uv command not found. Please ensure uv is installed and in your PATH."; exit 1; }
-
 # This script automates the deployment of the pAIses Flask application on CentOS 7.
 # It handles cloning/pulling the repository, setting up the virtual environment,
 # installing dependencies, running database migrations, and setting up the systemd service.

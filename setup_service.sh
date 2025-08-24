@@ -1,7 +1,5 @@
 #!/bin/bash
 
-UV_BIN="$1" # uv binary path passed as argument
-
 # This script sets up a systemd service for the pAIses Flask application on CentOS 7.
 # It assumes Python and uv are already installed.
 #
@@ -58,7 +56,7 @@ After=network.target
 User=$APP_USER
 Group=$APP_GROUP
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$PROJECT_DIR/.venv/bin/uv run app.py
+ExecStart=/root/.local/bin/uv run app.py
 Restart=always
 RestartSec=5
 StandardOutput=journal
