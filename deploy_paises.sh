@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# Set a more comprehensive PATH to find uv
-export PATH="/usr/local/bin:/usr/bin:$HOME/.cargo/bin:$HOME/.uv/bin:$HOME/.local/bin:$PATH"
-
 # This script automates the deployment of the pAIses Flask application on CentOS 7.
 # It handles cloning/pulling the repository, setting up the virtual environment,
 # installing dependencies, running database migrations, and setting up the systemd service.
 #
 # IMPORTANT: Run this script with sudo or as root.
 #
-# Usage: curl -sL <URL_TO_THIS_SCRIPT> | sudo bash
-# Or: sudo bash deploy_paises.sh
+# Usage: UV_BIN=$(which uv) curl -sL <URL_TO_THIS_SCRIPT> | bash
+# Or: UV_BIN=$(which uv) bash deploy_paises.sh
 
 PROJECT_DIR="/opt/paises"
 REPO_URL="https://github.com/ftonioloviemar/pAIses.git"
@@ -39,15 +36,15 @@ echo "Setting up virtual environment and installing dependencies..."
 # --- 4. Run database migrations ---
 
 echo "Running database migrations..."
-uv run flask migrate-db || { echo "Failed to run migrate-db."; exit 1; }
-uv run flask migrate-ranking-difficulty || { echo "Failed to run migrate-ranking-difficulty."; exit 1; }
+"$UV_BIN" run flask migrate-db || { echo "Failed to run migrate-db."; exit 1; }
+"$UV_BIN" run flask migrate-ranking-difficulty || { echo "Failed to run migrate-ranking-difficulty."; exit 1; }
 
 # --- 5. Set up systemd service ---
 
 echo "Setting up systemd service..."
 # Ensure the setup_service.sh script is executable
 chmod +x setup_service.sh || { echo "Failed to make setup_service.sh executable."; exit 1; }
-./setup_service.sh || { echo "Failed to run setup_service.sh."; exit 1; }
+./setup_service.sh "$UV_BIN" || { echo "Failed to run setup_service.sh."; exit 1; }
 
 # --- 6. Final service check ---
 
