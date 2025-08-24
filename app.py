@@ -6,6 +6,7 @@ from sqlalchemy import func
 from database import db, init_db, Country, Ranking
 from unidecode import unidecode
 from thefuzz import fuzz
+from logger_config import setup_logging, cleanup_old_logs
 
 app = Flask(__name__)
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,6 +16,14 @@ app.config['SECRET_KEY'] = 'dev_secret_key' # Replace with a real secret key
 
 db.init_app(app)
 
+# Setup logging
+logger = setup_logging()
+
+# Configure Flask's default logger to use our handlers
+for handler in logger.handlers:
+    app.logger.addHandler(handler)
+app.logger.setLevel(logger.level)
+
 # Helper function for string normalization
 def normalize_string(s):
     return unidecode(s).lower().strip()
@@ -22,6 +31,7 @@ def normalize_string(s):
 @app.cli.command('init-db')
 def init_db_command():
     init_db(app)
+    logger.info("Database initialized.")
 
 @app.cli.command('migrate-db')
 def migrate_db_command():
@@ -35,12 +45,12 @@ def migrate_db_command():
             column_names = [col['name'] for col in columns]
 
             if 'difficulty' not in column_names:
-                print("Adding 'difficulty' column to Country table...")
+                logger.info("Adding 'difficulty' column to Country table...")
                 try:
                     # Add column as nullable first
                     conn.execute(db.text("ALTER TABLE country ADD COLUMN difficulty VARCHAR(255)"))
                     db.session.commit()
-                    print("'difficulty' column added.")
+                    logger.info("'difficulty' column added.")
 
                     # Populate difficulty for existing countries
                     easy_countries = [
@@ -59,21 +69,21 @@ def migrate_db_command():
                             difficulty = "medium"
                         country.difficulty = difficulty
                     db.session.commit()
-                    print("Difficulty populated for existing countries.")
+                    logger.info("Difficulty populated for existing countries.")
 
                     # Alter column to NOT NULL after populating
                     # SQLite doesn't support ALTER COLUMN SET NOT NULL directly.
                     # This would require a more complex migration (new table, copy data, drop old, rename).
                     # For simplicity, we'll leave it nullable for now or rely on application logic.
-                    print("Migration complete. 'difficulty' column added and populated.")
+                    logger.info("Migration complete. 'difficulty' column added and populated.")
 
                 except Exception as e:
                     db.session.rollback()
-                    print(f"Error during migration: {e}")
+                    logger.error(f"Error during migration: {e}")
             else:
-                print("'difficulty' column already exists.")
+                logger.info("'difficulty' column already exists.")
         else:
-            print("'country' table does not exist. Run 'init-db' first.")
+            logger.warning("'country' table does not exist. Run 'init-db' first.")
 
 @app.cli.command('migrate-ranking-difficulty')
 def migrate_ranking_difficulty_command():
@@ -87,11 +97,11 @@ def migrate_ranking_difficulty_command():
             column_names = [col['name'] for col in columns]
 
             if 'difficulty' not in column_names:
-                print("Adding 'difficulty' column to Ranking table...")
+                logger.info("Adding 'difficulty' column to Ranking table...")
                 try:
                     conn.execute(db.text("ALTER TABLE ranking ADD COLUMN difficulty VARCHAR(255)"))
                     db.session.commit()
-                    print("'difficulty' column added.")
+                    logger.info("'difficulty' column added.")
 
                     rankings = Ranking.query.all()
                     for entry in rankings:
@@ -103,16 +113,16 @@ def migrate_ranking_difficulty_command():
                             # Default if country not found (e.g., if country data was reset)
                             entry.difficulty = "unknown" 
                     db.session.commit()
-                    print("Difficulty populated for existing ranking entries.")
-                    print("Migration complete. 'difficulty' column added and populated for Ranking.")
+                    logger.info("Difficulty populated for existing ranking entries.")
+                    logger.info("Migration complete. 'difficulty' column added and populated for Ranking.")
 
                 except Exception as e:
                     db.session.rollback()
-                    print(f"Error during migration: {e}")
+                    logger.error(f"Error during migration: {e}")
             else:
-                print("'difficulty' column already exists in Ranking table.")
+                logger.info("'difficulty' column already exists in Ranking table.")
         else:
-            print("'ranking' table does not exist.")
+            logger.warning("'ranking' table does not exist.")
 
 @app.route('/')
 def index():
@@ -122,11 +132,21 @@ def index():
 def start_game():
     data = request.get_json()
     selected_difficulty = data.get('difficulty', 'easy') # Default to easy
+    logger.info("Starting game with difficulty: %s", selected_difficulty, extra={'ip_address': request.remote_addr})
 
     # Filter countries by difficulty
-    available_countries = Country.query.filter_by(difficulty=selected_difficulty).all()
+    if selected_difficulty == 'easy':
+        available_countries = Country.query.filter_by(difficulty='easy').all()
+    elif selected_difficulty == 'medium':
+        available_countries = Country.query.filter(Country.difficulty.in_(['easy', 'medium'])).all()
+    elif selected_difficulty == 'hard':
+        available_countries = Country.query.filter(Country.difficulty.in_(['easy', 'medium', 'hard'])).all()
+    else:
+        # Default to all countries if difficulty is unknown
+        available_countries = Country.query.all()
 
     if not available_countries:
+        logger.warning(f"No countries found for difficulty: {selected_difficulty}")
         return jsonify({'error': 'No countries found for this difficulty.'}), 400
 
     # Prevent picking the same country twice in a row
@@ -146,6 +166,7 @@ def start_game():
     session['wrong_guesses'] = []
     session['game_over'] = False
 
+    logger.info(f"Game started. Initial letter: {country.initial_letter}, Country: {country.name}, Difficulty: {country.difficulty}")
     return jsonify({
         'initial_letter': country.initial_letter
     })
@@ -154,8 +175,10 @@ def start_game():
 def guess():
     data = request.get_json()
     guess_country_name = data.get('guess', '')
+    logger.info("Received guess: %s", guess_country_name, extra={'ip_address': request.remote_addr})
 
     if 'country_id' not in session or session.get('game_over'):
+        logger.warning("Guess received but game not started or already over.")
         return jsonify({'error': 'Game not started or already over. Please refresh.'}), 400
 
     target_country = db.session.get(Country, session['country_id'])
@@ -172,6 +195,7 @@ def guess():
     if match_ratio > 90:
         time_spent = time.time() - session['start_time']
         session['game_over'] = True
+        logger.info(f"Player won! Country: {target_country.name}, Time: {time_spent:.2f}s, Attempts: {session['attempts']}")
         return jsonify({
             'status': 'win',
             'country_name': target_country.name,
@@ -187,6 +211,7 @@ def guess():
 
         if len(wrong_guesses) >= 10:
             session['game_over'] = True
+            logger.info(f"Player lost! Country: {target_country.name}, Attempts: {session['attempts']}")
             return jsonify({
                 'status': 'lose',
                 'country_name': target_country.name, # Ensure this is sent on loss
@@ -195,6 +220,7 @@ def guess():
                 'attempts': session['attempts']
             })
         
+        logger.info(f"Wrong guess: {guess_country_name}. Attempts: {session['attempts']}")
         return jsonify({
             'status': 'wrong',
             'message': f'"{guess_country_name}" não é o país correto. Tente novamente.',
@@ -206,11 +232,13 @@ def guess():
 def save_ranking():
     # Ensure game was won and data is in session
     if 'country_id' not in session or not session.get('game_over') or 'start_time' not in session:
+        logger.warning("Attempted to save ranking without valid game data.", extra={'ip_address': request.remote_addr})
         return jsonify({'error': 'No game data to save.'}), 400
 
     data = request.get_json()
     player_name = data.get('player_name')
     if not player_name:
+        logger.warning("Attempted to save ranking without player name.", extra={'ip_address': request.remote_addr})
         return jsonify({'error': 'Player name is required.'}), 400
     
     target_country = db.session.get(Country, session['country_id'])
@@ -227,6 +255,8 @@ def save_ranking():
     )
     db.session.add(new_ranking)
     db.session.commit()
+    logger.info("Ranking saved for %s (Country: %s, Time: %.2fs, Attempts: %s, Difficulty: %s).",
+                player_name, target_country.name, time_spent, attempts, target_country.difficulty, extra={'ip_address': request.remote_addr})
 
     session.clear()
     return jsonify({'status': 'success'})
@@ -234,6 +264,7 @@ def save_ranking():
 @app.route('/give_up', methods=['POST'])
 def give_up():
     if 'country_id' not in session:
+        logger.warning("Attempted to give up without game in progress.", extra={'ip_address': request.remote_addr})
         return jsonify({'error': 'No game in progress.'}), 400
 
     target_country = db.session.get(Country, session['country_id'])
@@ -245,6 +276,7 @@ def give_up():
     session.pop('attempts', None)
     session.pop('wrong_guesses', None)
 
+    logger.info("Player gave up. Country: %s, Attempts: %s", target_country.name, attempts, extra={'ip_address': request.remote_addr})
     return jsonify({
         'status': 'given_up',
         'country_name': target_country.name,
@@ -265,7 +297,9 @@ def ranking():
     # Limit to 20 after sorting
     rankings = rankings[:20]
 
+    logger.info("Ranking page accessed.", extra={'ip_address': request.remote_addr})
     return render_template('ranking.html', rankings=rankings)
 
 if __name__ == '__main__':
+    cleanup_old_logs()
     app.run(debug=True)
