@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set a more comprehensive PATH to find uv
-export PATH="/usr/local/bin:/usr/bin:$HOME/.cargo/bin:$HOME/.uv/bin:$PATH"
+export PATH="/usr/local/bin:/usr/bin:$HOME/.cargo/bin:$HOME/.uv/bin:$HOME/.local/bin:$PATH"
 
 # This script automates the deployment of the pAIses Flask application on CentOS 7.
 # It handles cloning/pulling the repository, setting up the virtual environment,
