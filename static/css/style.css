@@ -34,7 +34,7 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     width: 100%;
-    max-width: 600px;
+    max-width: 800px;
     text-align: center;
 }
 
@@ -97,6 +97,13 @@ button, .play-again-btn {
     transition: background-color 0.3s;
     text-decoration: none;
     display: inline-block;
+}
+
+.button-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
 }
 
 button:hover, .play-again-btn:hover {

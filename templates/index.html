@@ -14,15 +14,28 @@
             <p>O desafio é adivinhar o país com a menor quantidade de tentativas e tempo.</p>
         </header>
 
-        <div id="game-area">
+        <div id="start-screen" class="button-group-vertical">
+            <div class="difficulty-selection">
+                <label><input type="radio" name="difficulty" value="easy" checked> Fácil</label>
+                <label><input type="radio" name="difficulty" value="medium"> Médio</label>
+                <label><input type="radio" name="difficulty" value="hard"> Difícil</label>
+            </div>
+            <button id="start-game-btn">Iniciar Jogo</button>
+            <button id="view-ranking-btn">Ver Ranking</button>
+        </div>
+
+        <div id="game-area" class="hidden">
             <p class="initial-letter-container">
                 A primeira letra do país é: <span id="initial-letter">?</span>
             </p>
             
-            <form id="guess-form">
-                <input type="text" id="guess-input" placeholder="Digite o nome de um país" autocomplete="off" required>
-                <button type="submit">Adivinhar</button>
-            </form>
+            <div class="button-group-vertical">
+                <form id="guess-form">
+                    <input type="text" id="guess-input" placeholder="Digite o nome de um país" autocomplete="off" required>
+                    <button type="submit">Adivinhar</button>
+                </form>
+                <button id="give-up-btn" class="give-up-btn">Desistir da Rodada</button>
+            </div>
 
             <div id="feedback-area">
                 <!-- Mensagens de acerto/erro aparecerão aqui -->
@@ -47,8 +60,10 @@
                 <input type="text" id="player-name" placeholder="Digite seu nome para o ranking" required>
                 <button type="submit">Salvar no Ranking</button>
             </form>
-            <button id="play-again-btn">Jogar Novamente</button>
-            <a href="/ranking" class="view-ranking-btn">Ver Ranking</a>
+            <div class="button-group-vertical">
+                <button id="play-again-btn">Jogar Novamente</button>
+                <button id="view-ranking-btn-win">Ver Ranking</button>
+            </div>
         </div>
 
         <div id="lose-screen" class="hidden">
@@ -56,8 +71,10 @@
             <img id="country-flag-lose" src="" alt="Bandeira do País">
             <p>O país correto era: <strong id="correct-country"></strong></p>
             <p>Total de tentativas: <strong id="lose-attempts"></strong></p>
-            <button id="play-again-btn-lose">Jogar Novamente</button>
-            <a href="/ranking" class="view-ranking-btn">Ver Ranking</a>
+            <div class="button-group-vertical">
+                <button id="play-again-btn-lose">Jogar Novamente</button>
+                <button id="view-ranking-btn-lose">Ver Ranking</button>
+            </div>
         </div>
 
     </div>
@@ -77,11 +94,17 @@
             const rankingForm = document.getElementById('ranking-form');
             const playAgainBtn = document.getElementById('play-again-btn');
             const playAgainBtnLose = document.getElementById('play-again-btn-lose');
+            const startScreen = document.getElementById('start-screen');
+            const startGameBtn = document.getElementById('start-game-btn');
+            const viewRankingBtn = document.getElementById('view-ranking-btn');
+            const viewRankingBtnWin = document.getElementById('view-ranking-btn-win');
+            const viewRankingBtnLose = document.getElementById('view-ranking-btn-lose');
 
             let finalTime = 0;
             let finalAttempts = 0;
 
             function startGame() {
+                startScreen.classList.add('hidden');
                 gameArea.classList.remove('hidden');
                 winScreen.classList.add('hidden');
                 loseScreen.classList.add('hidden');
@@ -92,12 +115,29 @@
                 guessInput.value = '';
                 guessInput.focus();
 
-                fetch('/start_game', { method: 'POST' })
+                const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+
+                fetch('/start_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ difficulty: selectedDifficulty })
+                })
                     .then(res => res.json())
                     .then(data => {
                         initialLetterEl.textContent = data.initial_letter;
                     });
             }
+
+            startGameBtn.addEventListener('click', startGame);
+            viewRankingBtn.addEventListener('click', () => {
+                window.location.href = '/ranking';
+            });
+            viewRankingBtnWin.addEventListener('click', () => {
+                window.location.href = '/ranking';
+            });
+            viewRankingBtnLose.addEventListener('click', () => {
+                window.location.href = '/ranking';
+            });
 
             guessForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -180,8 +220,29 @@
             playAgainBtn.addEventListener('click', startGame);
             playAgainBtnLose.addEventListener('click', startGame);
 
-            // Start the first game on page load
-            startGame();
+            const giveUpBtn = document.getElementById('give-up-btn');
+
+            giveUpBtn.addEventListener('click', () => {
+                fetch('/give_up', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'given_up') {
+                            showGiveUpScreen(data);
+                        } else {
+                            alert('Erro ao desistir da rodada: ' + data.error);
+                        }
+                    });
+            });
+
+            function showGiveUpScreen(data) {
+                gameArea.classList.add('hidden');
+                loseScreen.classList.remove('hidden'); // Reusing lose screen for now
+                document.getElementById('lose-message').textContent = "Você desistiu da rodada!";
+                document.getElementById('correct-country').textContent = data.country_name;
+                document.getElementById('country-flag-lose').src = `/static/flags/${data.flag_code}.svg`;
+                document.getElementById('lose-attempts').textContent = data.attempts; // Display attempts up to giving up
+            }
+
         });
     </script>
 </body>

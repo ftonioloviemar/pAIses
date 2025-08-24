@@ -21,6 +21,7 @@
                         <th>Posição</th>
                         <th>Nome</th>
                         <th>País Adivinhado</th>
+                        <th>Dificuldade</th>
                         <th>Tempo (s)</th>
                         <th>Tentativas</th>
                     </tr>
@@ -31,12 +32,21 @@
                         <td>{{ loop.index }}</td>
                         <td>{{ entry.player_name }}</td>
                         <td>{{ entry.country_name }}</td>
+                        <td>
+                            {% set difficulty_map = {
+                                'easy': 'Fácil',
+                                'medium': 'Médio',
+                                'hard': 'Difícil',
+                                'unknown': 'Desconhecido'
+                            } %}
+                            {{ difficulty_map.get(entry.difficulty, entry.difficulty) }}
+                        </td>
                         <td>{{ "%.2f"|format(entry.time_spent) }}</td>
                         <td>{{ entry.attempts }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5">Ninguém no ranking ainda. Seja o primeiro!</td>
+                        <td colspan="6">Ninguém no ranking ainda. Seja o primeiro!</td>
                     </tr>
                     {% endfor %}
                 </tbody>

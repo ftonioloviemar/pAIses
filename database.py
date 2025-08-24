@@ -10,6 +10,7 @@ class Country(db.Model):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     initial_letter: Mapped[str] = mapped_column(String(1), nullable=False)
     flag_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    difficulty: Mapped[str] = mapped_column(String, nullable=False)
 
 class Ranking(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -17,6 +18,7 @@ class Ranking(db.Model):
     country_name: Mapped[str] = mapped_column(String, nullable=False)
     time_spent: Mapped[float] = mapped_column(Float, nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    difficulty: Mapped[str] = mapped_column(String, nullable=False)
 
 def get_countries_data():
     return [
@@ -219,18 +221,38 @@ def get_countries_data():
 
 def init_db(app):
     with app.app_context():
+        # db.drop_all() # Removed to prevent data loss
         db.create_all()
+        
+        easy_countries = [
+            "Brasil", "Estados Unidos", "Argentina", "Portugal", "Espanha", "França", "Alemanha", "Itália", "Japão", "China", "Canadá", "México", "Reino Unido"
+        ]
+        medium_countries = [
+            "Chile", "Colômbia", "Peru", "Uruguai", "Paraguai", "Venezuela", "África do Sul", "Austrália", "Nova Zelândia", "Índia", "Rússia", "Egito", "Nigéria", "Suécia", "Noruega", "Finlândia", "Dinamarca", "Países Baixos", "Bélgica", "Suíça", "Áustria", "Grécia", "Turquia", "Arábia Saudita", "Emirados Árabes Unidos", "Israel", "Coreia do Sul", "Tailândia", "Vietnã", "Indonésia"
+        ]
+
         # Check if countries are already populated
+        # This logic needs to be updated to handle existing countries and new difficulty column
+        # For now, it will only add countries if the table is empty.
+        # A separate migration step is needed to add 'difficulty' to existing countries.
         if Country.query.first() is None:
             countries_data = get_countries_data()
             for country_data in countries_data:
+                country_name = country_data["name"]
+                difficulty = "hard" # Default to hard
+                if country_name in easy_countries:
+                    difficulty = "easy"
+                elif country_name in medium_countries:
+                    difficulty = "medium"
+
                 country = Country(
-                    name=country_data["name"],
+                    name=country_name,
                     initial_letter=country_data["name"][0].upper(),
-                    flag_code=country_data["alpha-2"].lower()
+                    flag_code=country_data["alpha-2"].lower(),
+                    difficulty=difficulty
                 )
                 db.session.add(country)
             db.session.commit()
-            print("Database populated with countries.")
+            print("Database populated with countries and difficulties.")
         else:
             print("Database already populated.")
