@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export PATH="$HOME/.cargo/bin:$PATH"
+
 # This script automates the deployment of the pAIses Flask application on CentOS 7.
 # It handles cloning/pulling the repository, setting up the virtual environment,
 # installing dependencies, running database migrations, and setting up the systemd service.
