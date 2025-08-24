@@ -34,7 +34,6 @@ cd "$PROJECT_DIR" || { echo "Failed to change to project directory."; exit 1; }
 
 echo "Setting up virtual environment and installing dependencies..."
 # uv will automatically create/manage the venv
-uv pip install -r requirements.txt || { echo "Failed to install dependencies."; exit 1; }
 
 # --- 4. Run database migrations ---
 
