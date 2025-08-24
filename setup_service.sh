@@ -8,7 +8,7 @@
 # For production environments, consider using a WSGI server (like Gunicorn/uWSGI)
 # and a reverse proxy (like Nginx/Apache) for better performance and security.
 
-PROJECT_DIR="/opt/pAIses"
+PROJECT_DIR="/opt/paises"
 APP_USER="paisesuser"
 APP_GROUP="paisesgroup"
 SERVICE_NAME="paises"
