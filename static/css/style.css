@@ -63,14 +63,16 @@ header p {
     border-radius: 8px;
 }
 
-#guess-form {
+
+.input-container {
     display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 20px;
 }
 
-#guess-input {
-    flex-grow: 1;
+#guess-form input {
+    width: 100%;
     padding: 12px;
     border: 2px solid #ddd;
     border-radius: 5px;
@@ -79,10 +81,38 @@ header p {
     transition: border-color 0.3s;
 }
 
-#guess-input:focus {
+#guess-form input:focus {
     outline: none;
     border-color: var(--primary-color);
 }
+
+#guess-form button {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    text-decoration: none;
+    display: block; /* Ensure it takes full width and stacks */
+}
+
+#guess-form button:hover {
+    background-color: #2980b9;
+}
+
+
+
+
+
+
+
+
 
 button, .play-again-btn {
     padding: 12px 20px;
@@ -109,6 +139,8 @@ button, .play-again-btn {
 button:hover, .play-again-btn:hover {
     background-color: #2980b9;
 }
+
+
 
 #feedback-area {
     min-height: 24px;
@@ -179,6 +211,10 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+}
+
+#ranking-table-container {
+    overflow-x: auto;
 }
 
 th, td {
