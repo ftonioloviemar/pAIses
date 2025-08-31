@@ -21,9 +21,9 @@
 
         <div id="start-screen" class="button-group-vertical">
             <div class="difficulty-selection">
-                <label><input type="radio" name="difficulty" value="easy" checked> Fácil</label>
-                <label><input type="radio" name="difficulty" value="medium"> Médio</label>
-                <label><input type="radio" name="difficulty" value="hard"> Difícil</label>
+                <label><input type="radio" name="difficulty" value="easy" {% if last_difficulty == 'easy' %}checked{% endif %}> Fácil</label>
+                <label><input type="radio" name="difficulty" value="medium" {% if last_difficulty == 'medium' %}checked{% endif %}> Médio</label>
+                <label><input type="radio" name="difficulty" value="hard" {% if last_difficulty == 'hard' %}checked{% endif %}> Difícil</label>
             </div>
             <button id="start-game-btn">Iniciar Jogo</button>
             <button id="view-ranking-btn">Ver Ranking</button>

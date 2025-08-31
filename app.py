@@ -126,7 +126,8 @@ def migrate_ranking_difficulty_command():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    last_difficulty = session.get('difficulty', 'easy')
+    return render_template('index.html', last_difficulty=last_difficulty)
 
 @app.route('/start_game', methods=['POST'])
 def start_game():
@@ -165,6 +166,7 @@ def start_game():
     session['attempts'] = 0
     session['wrong_guesses'] = []
     session['game_over'] = False
+    session['difficulty'] = selected_difficulty
 
     logger.info(f"Game started. Initial letter: {country.initial_letter}, Country: {country.name}, Difficulty: {country.difficulty}")
     return jsonify({
