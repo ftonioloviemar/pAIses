@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
 :root {
@@ -105,13 +104,6 @@ header p {
 #guess-form button:hover {
     background-color: #2980b9;
 }
-
-
-
-
-
-
-
 
 
 button, .play-again-btn {
@@ -239,3 +231,60 @@ tbody tr:nth-child(even) {
     margin-top: 30px;
 }
 
+#shuffle-animation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(240, 242, 245, 0.95); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's on top */
+    flex-direction: column;
+}
+
+#shuffle-animation-overlay.hidden {
+    display: none;
+}
+
+.flags-container {
+    position: relative;
+    width: 100%; /* Take full width of parent */
+    max-width: 800px; /* Max width for larger screens */
+    height: 500px; /* Define a height for the shuffle area */
+    overflow: hidden;
+    margin: auto;
+}
+
+.flags-container img {
+    position: absolute;
+    width: 80px;
+    height: 60px;
+    opacity: 0.8;
+    animation: shuffle 3s infinite ease-in-out alternate; /* Animation applied to each flag */
+}
+
+@keyframes shuffle {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 0.8;
+    }
+    25% {
+        transform: translate(calc(var(--random-x-1) * 1px), calc(var(--random-y-1) * 1px)) rotate(calc(var(--random-deg-1) * 1deg)) scale(calc(1 + var(--random-scale-1) * 0.2));
+        opacity: 0.9;
+    }
+    50% {
+        transform: translate(calc(var(--random-x-2) * 1px), calc(var(--random-y-2) * 1px)) rotate(calc(var(--random-deg-2) * 1deg)) scale(calc(1 + var(--random-scale-2) * 0.2));
+        opacity: 0.7;
+    }
+    75% {
+        transform: translate(calc(var(--random-x-3) * 1px), calc(var(--random-y-3) * 1px)) rotate(calc(var(--random-deg-3) * 1deg)) scale(calc(1 + var(--random-scale-3) * 0.2));
+        opacity: 0.9;
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 0.8;
+    }
+}

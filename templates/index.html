@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <div id="shuffle-animation-overlay" class="hidden">
+        <div class="flags-container">
+            <!-- Flags will be dynamically added here or a few static ones -->
+        </div>
+    </div>
     <div class="container">
         <header>
             <h1>pAIses</h1>
@@ -103,29 +108,83 @@
             let finalTime = 0;
             let finalAttempts = 0;
 
+            const shuffleAnimationOverlay = document.getElementById('shuffle-animation-overlay');
+            const flagsContainer = shuffleAnimationOverlay.querySelector('.flags-container');
+            const flagCodes = ['ad', 'br', 'us', 'fr', 'de', 'jp', 'cn', 'in', 'mx', 'ca']; // A few example flag codes
+
+            // Function to populate flags for animation
+            function populateFlagsForAnimation() {
+                flagsContainer.innerHTML = ''; // Clear existing flags
+                const numFlags = 20; // More flags for a better shuffle effect
+                const containerWidth = flagsContainer.offsetWidth;
+                const containerHeight = flagsContainer.offsetHeight;
+
+                for (let i = 0; i < numFlags; i++) {
+                    const img = document.createElement('img');
+                    const randomFlagCode = flagCodes[Math.floor(Math.random() * flagCodes.length)];
+                    img.src = `/static/flags/${randomFlagCode}.svg`;
+                    img.alt = 'Flag';
+
+                    // Set initial random position
+                    img.style.left = `${Math.random() * (containerWidth - 80)}px`; // 80px is flag width
+                    img.style.top = `${Math.random() * (containerHeight - 60)}px`; // 60px is flag height
+
+                    // Set random CSS variables for animation
+                    img.style.setProperty('--random-x-1', Math.random() * 100 - 50); // -50 to 50
+                    img.style.setProperty('--random-y-1', Math.random() * 100 - 50);
+                    img.style.setProperty('--random-deg-1', Math.random() * 90 - 45); // -45 to 45
+                    img.style.setProperty('--random-scale-1', Math.random()); // 0 to 1
+
+                    img.style.setProperty('--random-x-2', Math.random() * 100 - 50);
+                    img.style.setProperty('--random-y-2', Math.random() * 100 - 50);
+                    img.style.setProperty('--random-deg-2', Math.random() * 90 - 45);
+                    img.style.setProperty('--random-scale-2', Math.random());
+
+                    img.style.setProperty('--random-x-3', Math.random() * 100 - 50);
+                    img.style.setProperty('--random-y-3', Math.random() * 100 - 50);
+                    img.style.setProperty('--random-deg-3', Math.random() * 90 - 45);
+                    img.style.setProperty('--random-scale-3', Math.random());
+
+                    // Set random animation delay and duration
+                    img.style.animationDelay = `${Math.random() * 0.5}s`;
+                    img.style.animationDuration = `${2.5 + Math.random() * 1}s`; // 2.5s to 3.5s
+
+                    flagsContainer.appendChild(img);
+                }
+            }
+
+            // Modify startGame function
             function startGame() {
-                startScreen.classList.add('hidden');
-                gameArea.classList.remove('hidden');
-                winScreen.classList.add('hidden');
-                loseScreen.classList.add('hidden');
-                feedbackArea.textContent = '';
-                wrongGuessesList.innerHTML = '';
-                errorCountEl.textContent = '0';
-                totalAttemptsEl.textContent = '0';
-                guessInput.value = '';
-                guessInput.focus();
+                // Show animation overlay
+                populateFlagsForAnimation(); // Populate flags before showing
+                shuffleAnimationOverlay.classList.remove('hidden');
 
-                const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+                setTimeout(() => {
+                    shuffleAnimationOverlay.classList.add('hidden'); // Hide animation overlay
 
-                fetch('/start_game', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ difficulty: selectedDifficulty })
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        initialLetterEl.textContent = data.initial_letter;
-                    });
+                    startScreen.classList.add('hidden');
+                    gameArea.classList.remove('hidden');
+                    winScreen.classList.add('hidden');
+                    loseScreen.classList.add('hidden');
+                    feedbackArea.textContent = '';
+                    wrongGuessesList.innerHTML = '';
+                    errorCountEl.textContent = '0';
+                    totalAttemptsEl.textContent = '0';
+                    guessInput.value = '';
+                    guessInput.focus();
+
+                    const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+
+                    fetch('/start_game', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ difficulty: selectedDifficulty })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            initialLetterEl.textContent = data.initial_letter;
+                        });
+                }, 3000); // 3 seconds animation
             }
 
             startGameBtn.addEventListener('click', startGame);
