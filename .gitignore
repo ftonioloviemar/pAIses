@@ -11,3 +11,6 @@ wheels/
 
 # Logs
 logs/
+
+# Database
+paises.db

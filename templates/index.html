@@ -276,8 +276,14 @@
                 });
             });
 
-            playAgainBtn.addEventListener('click', startGame);
-            playAgainBtnLose.addEventListener('click', startGame);
+            function resetToStartScreen() {
+                winScreen.classList.add('hidden');
+                loseScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+            }
+
+            playAgainBtn.addEventListener('click', resetToStartScreen);
+            playAgainBtnLose.addEventListener('click', resetToStartScreen);
 
             const giveUpBtn = document.getElementById('give-up-btn');
 
