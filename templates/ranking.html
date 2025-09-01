@@ -47,7 +47,7 @@
                             } %}
                             {{ difficulty_map.get(entry.difficulty, entry.difficulty) }}
                         </td>
-                        <td>{{ "%.2f"|format(entry.time_spent) }}</td>
+                        <td>{{ entry.time_spent|round|int }}</td>
                         <td>{{ entry.attempts }}</td>
                         <td>{{ entry.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ entry.city }}</td>
