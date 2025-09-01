@@ -7,11 +7,11 @@
     <title>Ranking - pAIses</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="ranking-page">
     <div class="container">
         <header>
             <h1>Ranking Global</h1>
-            <p>Top 20 melhores jogadores.</p>
+            <p>Top {{ ranking_limit }} melhores jogadores.</p>
         </header>
 
         <div class="play-again-container">
@@ -28,6 +28,8 @@
                         <th>Dificuldade</th>
                         <th>Tempo (s)</th>
                         <th>Tentativas</th>
+                        <th>Data</th>
+                        <th>Cidade</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,10 +49,12 @@
                         </td>
                         <td>{{ "%.2f"|format(entry.time_spent) }}</td>
                         <td>{{ entry.attempts }}</td>
+                        <td>{{ entry.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ entry.city }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6">Ninguém no ranking ainda. Seja o primeiro!</td>
+                        <td colspan="8">Ninguém no ranking ainda. Seja o primeiro!</td>
                     </tr>
                     {% endfor %}
                 </tbody>

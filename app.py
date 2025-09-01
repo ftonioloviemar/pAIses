@@ -7,6 +7,10 @@ from database import db, init_db, Country, Ranking
 from unidecode import unidecode
 from thefuzz import fuzz
 from logger_config import setup_logging, cleanup_old_logs
+from datetime import datetime, timedelta
+import requests
+
+RANKING_LIMIT = 100
 
 app = Flask(__name__)
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -121,6 +125,56 @@ def migrate_ranking_difficulty_command():
                     logger.error(f"Error during migration: {e}")
             else:
                 logger.info("'difficulty' column already exists in Ranking table.")
+        else:
+            logger.warning("'ranking' table does not exist.")
+
+@app.cli.command('migrate-ranking-timestamp-city')
+def migrate_ranking_timestamp_city_command():
+    with app.app_context():
+        conn = db.engine.connect()
+        inspector = db.inspect(db.engine)
+        table_names = inspector.get_table_names()
+
+        if 'ranking' in table_names:
+            columns = inspector.get_columns('ranking')
+            column_names = [col['name'] for col in columns]
+
+            if 'timestamp' not in column_names:
+                logger.info("Adding 'timestamp' column to Ranking table...")
+                try:
+                    conn.execute(db.text("ALTER TABLE ranking ADD COLUMN timestamp DATETIME"))
+                    db.session.commit()
+                    logger.info("'timestamp' column added.")
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f"Error adding 'timestamp' column: {e}")
+                    return
+
+            if 'city' not in column_names:
+                logger.info("Adding 'city' column to Ranking table...")
+                try:
+                    conn.execute(db.text("ALTER TABLE ranking ADD COLUMN city VARCHAR(100)"))
+                    db.session.commit()
+                    logger.info("'city' column added.")
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f"Error adding 'city' column: {e}")
+                    return
+
+            # Backfill data
+            try:
+                yesterday = datetime.utcnow() - timedelta(days=1)
+                rankings_to_update = Ranking.query.filter(Ranking.timestamp.is_(None)).all()
+                for entry in rankings_to_update:
+                    entry.timestamp = yesterday
+                    if not entry.city:
+                        entry.city = "Desconhecida"
+                db.session.commit()
+                logger.info(f"Backfilled timestamp and city for {len(rankings_to_update)} ranking entries.")
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error backfilling data: {e}")
+
         else:
             logger.warning("'ranking' table does not exist.")
 
@@ -248,17 +302,40 @@ def save_ranking():
     time_spent = time.time() - session['start_time']
     attempts = session.get('attempts', 0)
 
+    # Geolocation
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    logger.info(f"X-Forwarded-For header: {x_forwarded_for}")
+    if x_forwarded_for:
+        ip_address = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip_address = request.remote_addr
+    
+    logger.info(f"Using IP address for geolocation: {ip_address}")
+
+    city = "Desconhecida"
+    if ip_address and not ip_address.startswith(('10.', '172.16.', '172.17.', '172.18.', '172.19.', '172.2', '172.3', '192.168.')):
+        try:
+            response = requests.get(f'http://ip-api.com/json/{ip_address}', timeout=2)
+            response.raise_for_status()
+            geo_data = response.json()
+            if geo_data.get('status') == 'success' and geo_data.get('city'):
+                city = geo_data['city']
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Geolocation API request failed for IP {ip_address}: {e}")
+
     new_ranking = Ranking(
         player_name=player_name,
         country_name=target_country.name,
         time_spent=time_spent,
         attempts=attempts,
-        difficulty=target_country.difficulty
+        difficulty=target_country.difficulty,
+        timestamp=datetime.utcnow(),
+        city=city
     )
     db.session.add(new_ranking)
     db.session.commit()
-    logger.info("Ranking saved for %s (Country: %s, Time: %.2fs, Attempts: %s, Difficulty: %s).",
-                player_name, target_country.name, time_spent, attempts, target_country.difficulty, extra={'ip_address': request.remote_addr})
+    logger.info("Ranking saved for %s (Country: %s, Time: %.2fs, Attempts: %s, Difficulty: %s, City: %s).",
+                player_name, target_country.name, time_spent, attempts, target_country.difficulty, city, extra={'ip_address': ip_address})
 
     session.clear()
     return jsonify({'status': 'success'})
@@ -296,11 +373,11 @@ def ranking():
     # Sort in Python based on custom difficulty order, then by time_spent, then attempts
     rankings.sort(key=lambda x: (difficulty_order.get(x.difficulty, 99), x.time_spent, x.attempts))
 
-    # Limit to 20 after sorting
-    rankings = rankings[:20]
+    # Limit to RANKING_LIMIT after sorting
+    rankings = rankings[:RANKING_LIMIT]
 
     logger.info("Ranking page accessed.", extra={'ip_address': request.remote_addr})
-    return render_template('ranking.html', rankings=rankings)
+    return render_template('ranking.html', rankings=rankings, ranking_limit=RANKING_LIMIT)
 
 if __name__ == '__main__':
     cleanup_old_logs()

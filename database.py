@@ -1,7 +1,8 @@
 import json
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Integer, Float
+from sqlalchemy import String, Integer, Float, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -19,6 +20,8 @@ class Ranking(db.Model):
     time_spent: Mapped[float] = mapped_column(Float, nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False)
     difficulty: Mapped[str] = mapped_column(String, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    city: Mapped[str] = mapped_column(String(100), nullable=True)
 
 def get_countries_data():
     return [

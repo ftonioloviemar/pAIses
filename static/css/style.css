@@ -288,3 +288,7 @@ tbody tr:nth-child(even) {
         opacity: 0.8;
     }
 }
+
+.ranking-page .container {
+    max-width: 1000px;
+}
