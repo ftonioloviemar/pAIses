@@ -1,4 +1,5 @@
 import os
+os.environ['TZ'] = 'America/Sao_Paulo'
 import random
 import time
 from flask import Flask, render_template, session, jsonify, request
@@ -9,6 +10,7 @@ from thefuzz import fuzz
 from logger_config import setup_logging, cleanup_old_logs
 from datetime import datetime, timedelta
 import requests
+import pytz
 
 RANKING_LIMIT = 100
 
@@ -369,6 +371,19 @@ def ranking():
     difficulty_order = {'hard': 1, 'medium': 2, 'easy': 3}
 
     rankings = db.session.query(Ranking).all()
+
+    # Define the Sao Paulo timezone
+    saopaulo_tz = pytz.timezone('America/Sao_Paulo')
+
+    # Convert UTC timestamps to Sao Paulo timezone
+    for r in rankings:
+        if r.timestamp:
+            # Ensure the timestamp is timezone-aware UTC before converting
+            if r.timestamp.tzinfo is None:
+                utc_dt = pytz.utc.localize(r.timestamp)
+            else:
+                utc_dt = r.timestamp.astimezone(pytz.utc)
+            r.timestamp = utc_dt.astimezone(saopaulo_tz)
 
     # Sort in Python based on custom difficulty order, then by time_spent, then attempts
     rankings.sort(key=lambda x: (difficulty_order.get(x.difficulty, 99), x.time_spent, x.attempts))

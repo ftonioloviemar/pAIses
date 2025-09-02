@@ -10,4 +10,5 @@ dependencies = [
     "thefuzz>=0.22.1",
     "unidecode>=1.4.0",
     "requests>=2.31.0",
+    "pytz>=2024.1",
 ]
